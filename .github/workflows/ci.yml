@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+  # Also run on main after each merge, so the README badge shows the state of main.
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    # Throwaway PostgreSQL for the API tests; these credentials only exist inside the job.
+    # Port 5433 matches the default test database URL (backend/vitest.config.js).
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: padelpass
+          POSTGRES_PASSWORD: padelpass
+          POSTGRES_DB: padelpass_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U padelpass"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
