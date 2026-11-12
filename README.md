@@ -1,5 +1,7 @@
 # PadelPassTeam
 
+[![CI](https://github.com/Bahyamin/PadelPass/actions/workflows/ci.yml/badge.svg)](https://github.com/Bahyamin/PadelPass/actions/workflows/ci.yml)
+
 Padel court booking and equipment rental web app (PadelBook).
 
 Team: Paul Calonne, Enki Millet, Benjamin Zilber, Yutong Cao.
@@ -63,6 +65,10 @@ Copy `backend/.env.example` to `backend/.env` to override the defaults. Never co
 | `npm run format` | Format both apps with Prettier              |
 
 The same `dev`, `lint`, `test` and `format` scripts exist inside `/backend` and `/frontend`.
+
+## Continuous integration
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every pull request, and on `main` after each merge. Two jobs run in parallel, one per app: `npm ci`, `npm run lint`, `npm test`. The backend job starts a PostgreSQL service container for the API tests. A pull request can only be merged when both checks are green.
 
 ## Git workflow
 
