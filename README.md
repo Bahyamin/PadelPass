@@ -34,12 +34,19 @@ Differences with the SDD: the code is written in JavaScript (ES modules) instead
 
 - Node.js 22 or later
 - npm
+- Docker (for the local PostgreSQL)
 
 ## Run the project
 
 ```bash
-npm run install:all   # installs root, backend and frontend dependencies
-npm run dev           # starts the backend and the frontend together
+npm run install:all                    # installs root, backend and frontend dependencies
+cp backend/.env.example backend/.env   # local settings (Windows: copy backend\.env.example backend\.env)
+docker compose up -d                   # starts PostgreSQL on localhost:5433
+cd backend
+npx prisma migrate dev                 # creates the tables
+npx prisma db seed                     # inserts the starting data
+cd ..
+npm run dev                            # starts the backend and the frontend together
 ```
 
 - Frontend: http://localhost:5173
@@ -49,11 +56,31 @@ Open the frontend: the page calls `GET /api/health` and displays `OK` when the b
 
 ### Environment variables
 
-Copy `backend/.env.example` to `backend/.env` to override the defaults. Never commit a `.env` file.
+All variables live in `backend/.env`, created from `backend/.env.example`. Never commit a `.env` file.
 
-| Variable | Default | Description       |
-| -------- | ------- | ----------------- |
-| `PORT`   | `3000`  | Backend HTTP port |
+| Variable | Description |
+| --- | --- |
+| `PORT` | Backend HTTP port (default `3000`) |
+| `DATABASE_URL` | PostgreSQL connection string; the example value matches `docker-compose.yml` |
+| `SEED_ADMIN_PASSWORD` | Password of the admin account created by the seed |
+| `SEED_STAFF_PASSWORD` | Password of the staff account created by the seed |
+| `TEST_DATABASE_URL` | Optional. Database of the backend tests (default: `padelpass_test` on the local PostgreSQL) |
+
+## Database
+
+PostgreSQL 16 runs in Docker (`docker-compose.yml`), on port **5433** of your machine so it does not clash with a locally installed PostgreSQL. The schema is managed with Prisma (`backend/prisma/schema.prisma`) and follows the SDD, section 4.1: `users`, `courts`, `court_closures`, `opening_hours`, `pricing_rules`, `settings`, `bookings`, `booking_equipment`, `equipment_types`, `equipment_items`, `rentals`, `notifications`, `audit_logs`.
+
+| Command (from `/backend`) | Description |
+| --- | --- |
+| `npx prisma migrate dev` | Apply the migrations (and create a new one after a schema change) |
+| `npx prisma db seed` | Insert the starting data; safe to run several times |
+| `npx prisma studio` | Browse the data in a web UI |
+
+The seed creates 4 courts, opening hours 08:00-23:00 every day, peak (40 €/h) and off-peak (28 €/h) pricing rules, the booking parameters (3 active bookings, 14-day window, 24 h cancellation deadline), 3 equipment types with 24 items, and two accounts: `admin@padelbook.local` and `staff@padelbook.local`.
+
+Integrity rules of the SDD (section 4.2) are enforced by PostgreSQL itself, in the first migration: the `no_overlap` exclusion constraint refuses two confirmed bookings that overlap on the same court, and CHECK constraints refuse a booking that ends before it starts or that has neither a player nor a guest.
+
+The backend tests need the PostgreSQL container to be running. They use a separate `padelpass_test` database, created and migrated automatically, so they never touch the development data.
 
 ## Scripts (from the root)
 
