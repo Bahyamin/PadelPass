@@ -1,0 +1,243 @@
+// Data model of the SDD, section 4.1. Tables and columns use the snake_case
+// names of the SDD; the JavaScript code uses camelCase names.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  PLAYER
+  STAFF
+  EQUIPMENT_MANAGER
+  ADMIN
+}
+
+enum CourtType {
+  INDOOR
+  OUTDOOR
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+}
+
+enum ItemStatus {
+  AVAILABLE
+  RENTED
+  DAMAGED
+  MAINTENANCE
+  LOST
+}
+
+enum ReturnCondition {
+  OK
+  DAMAGED
+  MISSING
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  firstName    String    @map("first_name")
+  lastName     String    @map("last_name")
+  email        String    @unique
+  phone        String
+  passwordHash String    @map("password_hash")
+  role         Role      @default(PLAYER)
+  isVerified   Boolean   @default(false) @map("is_verified")
+  isActive     Boolean   @default(true) @map("is_active")
+  consentAt    DateTime? @map("consent_at") @db.Timestamptz(3)
+  failedLogins Int       @default(0) @map("failed_logins")
+  lockedUntil  DateTime? @map("locked_until") @db.Timestamptz(3)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  bookings        Booking[]      @relation("BookingPlayer")
+  createdBookings Booking[]      @relation("BookingCreator")
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+
+  @@map("users")
+}
+
+model Court {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  type     CourtType @default(INDOOR)
+  isActive Boolean   @default(true) @map("is_active")
+
+  closures CourtClosure[]
+  bookings Booking[]
+
+  @@map("courts")
+}
+
+model CourtClosure {
+  id        Int      @id @default(autoincrement())
+  courtId   Int      @map("court_id")
+  startTime DateTime @map("start_time") @db.Timestamptz(3)
+  endTime   DateTime @map("end_time") @db.Timestamptz(3)
+  reason    String?
+
+  court Court @relation(fields: [courtId], references: [id], onDelete: Restrict)
+
+  @@map("court_closures")
+}
+
+// Times are "HH:mm" strings in the club time zone (Europe/Paris).
+model OpeningHours {
+  dayOfWeek Int    @id @map("day_of_week") // 0 = Sunday ... 6 = Saturday
+  openTime  String @map("open_time")
+  closeTime String @map("close_time")
+
+  @@map("opening_hours")
+}
+
+model PricingRule {
+  id           Int     @id @default(autoincrement())
+  dayOfWeek    Int     @map("day_of_week") // 0 = Sunday ... 6 = Saturday
+  startTime    String  @map("start_time") // "HH:mm"
+  endTime      String  @map("end_time") // "HH:mm"
+  pricePerHour Decimal @map("price_per_hour") @db.Decimal(8, 2)
+  label        String
+
+  @@unique([dayOfWeek, startTime])
+  @@map("pricing_rules")
+}
+
+// Booking parameters (max active bookings, booking window...), editable by the admin.
+model Setting {
+  key   String @id
+  value String
+
+  @@map("settings")
+}
+
+// Overlapping confirmed bookings on the same court are refused by the
+// "no_overlap" exclusion constraint, added with raw SQL in the migration.
+model Booking {
+  id            Int           @id @default(autoincrement())
+  userId        Int?          @map("user_id")
+  guestName     String?       @map("guest_name")
+  guestPhone    String?       @map("guest_phone")
+  courtId       Int           @map("court_id")
+  startTime     DateTime      @map("start_time") @db.Timestamptz(3)
+  endTime       DateTime      @map("end_time") @db.Timestamptz(3)
+  status        BookingStatus @default(CONFIRMED)
+  courtPrice    Decimal       @map("court_price") @db.Decimal(8, 2)
+  feesTotal     Decimal       @default(0) @map("fees_total") @db.Decimal(8, 2)
+  paymentStatus PaymentStatus @default(UNPAID) @map("payment_status")
+  createdById   Int           @map("created_by")
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user          User?              @relation("BookingPlayer", fields: [userId], references: [id], onDelete: Restrict)
+  court         Court              @relation(fields: [courtId], references: [id], onDelete: Restrict)
+  createdBy     User               @relation("BookingCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  equipment     BookingEquipment[]
+  rentals       Rental[]
+  notifications Notification[]
+
+  @@index([courtId, startTime])
+  @@index([userId, status, startTime])
+  @@map("bookings")
+}
+
+model EquipmentType {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  category    String
+  rentalPrice Decimal @map("rental_price") @db.Decimal(8, 2)
+  damageFee   Decimal @map("damage_fee") @db.Decimal(8, 2)
+  isActive    Boolean @default(true) @map("is_active")
+
+  items    EquipmentItem[]
+  bookings BookingEquipment[]
+
+  @@map("equipment_types")
+}
+
+model EquipmentItem {
+  id     Int        @id @default(autoincrement())
+  typeId Int        @map("type_id")
+  code   String     @unique
+  status ItemStatus @default(AVAILABLE)
+
+  type    EquipmentType @relation(fields: [typeId], references: [id], onDelete: Restrict)
+  rentals Rental[]
+
+  @@index([typeId, status])
+  @@map("equipment_items")
+}
+
+// Equipment reserved with a booking: a quantity per type, at the price of the day.
+model BookingEquipment {
+  bookingId Int     @map("booking_id")
+  typeId    Int     @map("type_id")
+  quantity  Int
+  unitPrice Decimal @map("unit_price") @db.Decimal(8, 2)
+
+  booking Booking       @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  type    EquipmentType @relation(fields: [typeId], references: [id], onDelete: Restrict)
+
+  @@id([bookingId, typeId])
+  @@map("booking_equipment")
+}
+
+// Hand-out and return of one physical item.
+model Rental {
+  id              Int              @id @default(autoincrement())
+  bookingId       Int              @map("booking_id")
+  itemId          Int              @map("item_id")
+  pickedUpAt      DateTime         @default(now()) @map("picked_up_at") @db.Timestamptz(3)
+  returnedAt      DateTime?        @map("returned_at") @db.Timestamptz(3)
+  returnCondition ReturnCondition? @map("return_condition")
+  feeCharged      Decimal          @default(0) @map("fee_charged") @db.Decimal(8, 2)
+
+  booking Booking       @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  item    EquipmentItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
+  @@index([bookingId])
+  @@index([itemId])
+  @@map("rentals")
+}
+
+// Log of the emails sent (or failed) by the notification service.
+model Notification {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  bookingId Int?      @map("booking_id")
+  type      String
+  status    String
+  sentAt    DateTime? @map("sent_at") @db.Timestamptz(3)
+  error     String?
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  @@map("notifications")
+}
+
+// Staff and administrator actions: who did what, when.
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  action    String
+  entity    String
+  entityId  Int?     @map("entity_id")
+  details   Json?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@map("audit_logs")
+}
