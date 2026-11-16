@@ -1,0 +1,15 @@
+# Local development database only. These credentials are not used anywhere else.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: padelpass
+      POSTGRES_PASSWORD: padelpass
+      POSTGRES_DB: padelpass
+    ports:
+      - '5433:5432' # 5433 on the host, so it does not clash with a locally installed PostgreSQL
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+volumes:
+  db-data:
