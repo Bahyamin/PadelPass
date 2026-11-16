@@ -66,6 +66,20 @@ All variables live in `backend/.env`, created from `backend/.env.example`. Never
 | `SEED_STAFF_PASSWORD` | Password of the staff account created by the seed |
 | `TEST_DATABASE_URL` | Optional. Database of the backend tests (default: `padelpass_test` on the local PostgreSQL) |
 
+## API
+
+All routes are prefixed with `/api` and follow SDD section 5.1.
+
+### POST /api/auth/register — create a player account (public)
+
+Request body: `firstName`, `lastName`, `email`, `password`, `phone`, `acceptedTerms`.
+
+- `201`: account created with role `PLAYER`, not verified, and consent date recorded.
+- `400 VALIDATION_ERROR`: invalid input, weak password, or terms not accepted.
+- `409 EMAIL_ALREADY_USED`: an account already exists with this email.
+
+Passwords are hashed with bcrypt (cost 12) and are never returned in responses. The registration page is available at `/register`.
+
 ## Database
 
 PostgreSQL 16 runs in Docker (`docker-compose.yml`), on port **5433** of your machine so it does not clash with a locally installed PostgreSQL. The schema is managed with Prisma (`backend/prisma/schema.prisma`) and follows the SDD, section 4.1: `users`, `courts`, `court_closures`, `opening_hours`, `pricing_rules`, `settings`, `bookings`, `booking_equipment`, `equipment_types`, `equipment_items`, `rentals`, `notifications`, `audit_logs`.
