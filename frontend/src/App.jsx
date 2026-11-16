@@ -1,21 +1,15 @@
-import { useEffect, useState } from 'react';
+import { Route, Routes } from 'react-router';
+import Home from './pages/Home.jsx';
+import Login from './pages/Login.jsx';
+import Register from './pages/Register.jsx';
 
+// Pages of the app (SDD 5.2).
 export default function App() {
-  const [health, setHealth] = useState('...');
-
-  useEffect(() => {
-    fetch('/api/health')
-      .then((res) => res.json())
-      .then((data) => setHealth(data.status))
-      .catch(() => setHealth('unreachable'));
-  }, []);
-
   return (
-    <main>
-      <h1>PadelPassTeam</h1>
-      <p>
-        API status: <span>{health}</span>
-      </p>
-    </main>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/login" element={<Login />} />
+    </Routes>
   );
 }
