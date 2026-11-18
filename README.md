@@ -61,6 +61,7 @@ All variables live in `backend/.env`, created from `backend/.env.example`. Never
 | Variable | Description |
 | --- | --- |
 | `PORT` | Backend HTTP port (default `3000`) |
+| `JWT_SECRET` | Secret used to sign the login tokens; any long random value (required, the backend refuses to start without it) |
 | `DATABASE_URL` | PostgreSQL connection string; the example value matches `docker-compose.yml` |
 | `SEED_ADMIN_PASSWORD` | Password of the admin account created by the seed |
 | `SEED_STAFF_PASSWORD` | Password of the staff account created by the seed |
@@ -79,6 +80,27 @@ Request body: `firstName`, `lastName`, `email`, `password`, `phone`, `acceptedTe
 - `409 EMAIL_ALREADY_USED`: an account already exists with this email.
 
 Passwords are hashed with bcrypt (cost 12) and are never returned in responses. The registration page is available at `/register`.
+
+### POST /api/auth/login — log in (public)
+
+Body: `{ "email", "password" }`. On success the answer is the user, and a JWT valid 24 h is set in an httpOnly, SameSite=Strict cookie named `token`.
+
+| Status | Meaning |
+| --- | --- |
+| `200` | Logged in |
+| `401` | `INVALID_CREDENTIALS`: always the same message, whether the email exists or not |
+| `403` | `EMAIL_NOT_VERIFIED`: right password, but the email address is not verified yet |
+| `429` | `ACCOUNT_LOCKED`: 5 failed attempts in a row, login blocked for 15 minutes (also for unknown emails) |
+
+### POST /api/auth/logout — log out
+
+Clears the cookie. Answers `204`.
+
+### GET /api/users/me — the logged-in user (player)
+
+Answers `200` with the user, or `401 UNAUTHORIZED` without a valid token.
+
+Protected routes use two middlewares: `authenticate` (valid JWT cookie, else `401`) and `requireRole(...)` (role allowed, else `403`).
 
 ### GET /api/courts — list the active courts (public)
 
