@@ -80,6 +80,21 @@ Request body: `firstName`, `lastName`, `email`, `password`, `phone`, `acceptedTe
 
 Passwords are hashed with bcrypt (cost 12) and are never returned in responses. The registration page is available at `/register`.
 
+### GET /api/courts — list the active courts (public)
+
+Returns `[{ "id", "name", "type" }]`.
+
+### GET /api/availability?date=YYYY-MM-DD — availability grid of a day (public)
+
+Returns the opening and closing time, the 30-minute `slots` of the day, and for each active court the status of every slot: `FREE`, `BOOKED` (confirmed booking), `CLOSED` (court closure) or `PAST`.
+
+| Status | Meaning |
+| --- | --- |
+| `200` | The grid of the day |
+| `400` | `VALIDATION_ERROR`: missing or invalid date; `OUTSIDE_BOOKING_WINDOW`: before today or more than 14 days ahead |
+
+The page `/book` of the front end shows this grid.
+
 ## Database
 
 PostgreSQL 16 runs in Docker (`docker-compose.yml`), on port **5433** of your machine so it does not clash with a locally installed PostgreSQL. The schema is managed with Prisma (`backend/prisma/schema.prisma`) and follows the SDD, section 4.1: `users`, `courts`, `court_closures`, `opening_hours`, `pricing_rules`, `settings`, `bookings`, `booking_equipment`, `equipment_types`, `equipment_items`, `rentals`, `notifications`, `audit_logs`.

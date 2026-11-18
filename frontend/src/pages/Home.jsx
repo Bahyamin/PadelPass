@@ -20,6 +20,9 @@ export default function Home() {
       <p>
         <Link to="/register">Create an account</Link>
       </p>
+      <p>
+        <Link to="/book">Book a court</Link>
+      </p>
     </main>
   );
 }
