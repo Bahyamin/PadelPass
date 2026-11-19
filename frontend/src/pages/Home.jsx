@@ -22,6 +22,11 @@ export default function Home() {
       {user ? (
         <>
           <p>Hello {user.firstName}</p>
+          {user.role === 'ADMIN' && (
+            <p>
+              <Link to="/admin/settings">Club settings</Link>
+            </p>
+          )}
           <p>
             <Link to="/profile">My profile</Link>{' '}
             <button type="button" onClick={logout}>

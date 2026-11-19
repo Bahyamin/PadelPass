@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router';
 import RequireAuth from './auth/RequireAuth.jsx';
+import AdminSettings from './pages/AdminSettings.jsx';
 import Availability from './pages/Availability.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
@@ -21,6 +22,14 @@ export default function App() {
         element={
           <RequireAuth>
             <Profile />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/admin/settings"
+        element={
+          <RequireAuth>
+            <AdminSettings />
           </RequireAuth>
         }
       />
