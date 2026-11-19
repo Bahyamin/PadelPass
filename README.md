@@ -62,6 +62,9 @@ All variables live in `backend/.env`, created from `backend/.env.example`. Never
 | --- | --- |
 | `PORT` | Backend HTTP port (default `3000`) |
 | `JWT_SECRET` | Secret used to sign the login tokens; any long random value (required, the backend refuses to start without it) |
+| `APP_URL` | Address of the front end, used in the links sent by email (default `http://localhost:5173`) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | Email server. In development: the SMTP credentials of your Mailtrap inbox. Leave `SMTP_HOST` empty to print the emails in the backend console instead |
+| `MAIL_FROM` | Sender of the emails |
 | `DATABASE_URL` | PostgreSQL connection string; the example value matches `docker-compose.yml` |
 | `SEED_ADMIN_PASSWORD` | Password of the admin account created by the seed |
 | `SEED_STAFF_PASSWORD` | Password of the staff account created by the seed |
@@ -80,7 +83,18 @@ Request body: `firstName`, `lastName`, `email`, `password`, `phone`, `acceptedTe
 - `409 EMAIL_ALREADY_USED`: an account already exists with this email.
 
 Passwords are hashed with bcrypt (cost 12) and are never returned in responses. The registration page is available at `/register`.
+### POST /api/auth/verify-email — activate an account (public)
 
+Body: `{ "token" }`, the token of the link received by email after registration. The link opens the page `/verify-email?token=...` of the front end, which calls this route and then shows the login page.
+
+| Status | Meaning |
+| --- | --- |
+| `200` | Account verified, the player can log in |
+| `400` | `INVALID_TOKEN`: unknown or already used link; `TOKEN_EXPIRED`: link older than 48 hours |
+
+### POST /api/auth/resend-verification — get a new link (public)
+
+Body: `{ "email" }`. Always answers `202` with the same message, whether the email has an account or not, so the answer never reveals which accounts exist.
 ### POST /api/auth/login — log in (public)
 
 Body: `{ "email", "password" }`. On success the answer is the user, and a JWT valid 24 h is set in an httpOnly, SameSite=Strict cookie named `token`.
