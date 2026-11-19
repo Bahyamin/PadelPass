@@ -9,6 +9,7 @@ import {
 } from '../../utils/errors.js';
 import { usersRepository } from '../users/users.repository.js';
 import { authRepository } from './auth.repository.js';
+import { verificationService } from './verification.service.js';
 
 // bcrypt cost from the SDD, section 8.
 const BCRYPT_COST = 12;
@@ -23,8 +24,9 @@ const ACCOUNT_LOCKED = `Too many failed attempts, try again in ${config.lockMinu
 export const authService = {
   // Registration (FR-01, NFR-07, NFR-10).
   async register({ firstName, lastName, email, password, phone }) {
+    let user;
     try {
-      const user = await usersRepository.create({
+      user = await usersRepository.create({
         firstName,
         lastName,
         email,
@@ -34,7 +36,6 @@ export const authService = {
         consentAt: new Date(),
         // role PLAYER and isVerified false come from the schema defaults.
       });
-      return toPublicUser(user);
     } catch (err) {
       // P2002 = unique constraint violation, here on users.email.
       if (err.code === 'P2002') {
@@ -45,6 +46,11 @@ export const authService = {
       }
       throw err;
     }
+
+    // FR-02: email the verification link. A failed email does not cancel the
+    // registration: the player can ask for a new link.
+    await verificationService.sendLink(user);
+    return toPublicUser(user);
   },
 
   // Login (FR-03, RULE-11). Returns the user and a signed JWT.

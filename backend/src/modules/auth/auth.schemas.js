@@ -45,3 +45,16 @@ export const loginSchema = z.object({
     .string({ error: 'Password is required' })
     .min(1, 'Password is required'),
 });
+
+// FR-02: the token of the link received by email.
+export const verifyEmailSchema = z.object({
+  token: z.string({ error: 'Token is required' }).min(1, 'Token is required'),
+});
+
+export const resendVerificationSchema = z.object({
+  email: z
+    .string({ error: 'Email is required' })
+    .trim()
+    .toLowerCase()
+    .pipe(z.email('Email is not valid')),
+});

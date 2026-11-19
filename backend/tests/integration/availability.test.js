@@ -2,26 +2,18 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
 import app from '../../src/app.js';
 import { prisma } from '../../src/config/db.js';
+import { resetDb } from '../helpers/resetDb.js';
 import { addDays, clubTime, clubToday } from '../../src/utils/time.js';
 
 // Tomorrow at the club: every slot is in the future, inside the booking window.
 const tomorrow = addDays(clubToday(), 1);
-
-const clearData = async () => {
-  await prisma.booking.deleteMany();
-  await prisma.courtClosure.deleteMany();
-  await prisma.court.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.openingHours.deleteMany();
-  await prisma.setting.deleteMany();
-};
 
 describe('GET /api/courts and GET /api/availability', () => {
   let courtA;
   let courtB;
 
   beforeAll(async () => {
-    await clearData();
+    await resetDb();
     for (let day = 0; day <= 6; day++) {
       await prisma.openingHours.create({
         data: { dayOfWeek: day, openTime: '08:00', closeTime: '23:00' },
@@ -69,7 +61,7 @@ describe('GET /api/courts and GET /api/availability', () => {
   });
 
   afterAll(async () => {
-    await clearData();
+    await resetDb();
     await prisma.$disconnect();
   });
 

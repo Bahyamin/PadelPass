@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../auth/AuthContext.jsx';
 
 // Login page (FR-03). Errors come from the API: a generic message for wrong
@@ -7,6 +7,8 @@ import { useAuth } from '../auth/AuthContext.jsx';
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  // Message passed by another page, e.g. after the email verification.
+  const info = useLocation().state?.info;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -26,6 +28,7 @@ export default function Login() {
   return (
     <main>
       <h1>Log in</h1>
+      {info && <p role="status">{info}</p>}
       <form onSubmit={handleSubmit}>
         <p>
           <label>
@@ -58,6 +61,10 @@ export default function Login() {
       </form>
       <p>
         No account yet? <Link to="/register">Create an account</Link>
+      </p>
+      <p>
+        Did not receive the verification email?{' '}
+        <Link to="/verify-email">Get a new link</Link>
       </p>
     </main>
   );

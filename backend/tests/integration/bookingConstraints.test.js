@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { prisma } from '../../src/config/db.js';
+import { resetDb } from '../helpers/resetDb.js';
 
 // Checks the integrity rules of the SDD (section 4.2) on a real PostgreSQL.
 describe('booking integrity rules', () => {
@@ -23,9 +24,7 @@ describe('booking integrity rules', () => {
     });
 
   beforeAll(async () => {
-    await prisma.booking.deleteMany();
-    await prisma.court.deleteMany();
-    await prisma.user.deleteMany();
+    await resetDb();
     player = await prisma.user.create({
       data: {
         firstName: 'Test',
@@ -44,9 +43,7 @@ describe('booking integrity rules', () => {
   });
 
   afterAll(async () => {
-    await prisma.booking.deleteMany();
-    await prisma.court.deleteMany();
-    await prisma.user.deleteMany();
+    await resetDb();
     await prisma.$disconnect();
   });
 
