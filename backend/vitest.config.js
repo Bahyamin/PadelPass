@@ -7,7 +7,7 @@ const TEST_DATABASE_URL =
 
 export default defineConfig({
   test: {
-    env: { DATABASE_URL: TEST_DATABASE_URL },
+    env: { DATABASE_URL: TEST_DATABASE_URL, JWT_SECRET: 'test-only-secret' },
     globalSetup: './tests/globalSetup.js',
     // Test files share one database, so they run one after the other.
     fileParallelism: false,

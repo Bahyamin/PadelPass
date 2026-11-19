@@ -33,3 +33,15 @@ export const registerSchema = z.object({
     .regex(/^\+?[0-9 ]{6,20}$/, 'Phone number is not valid'),
   acceptedTerms: z.literal(true, { error: 'You must accept the terms' }),
 });
+
+// FR-03: the password is not checked against the rules here, only compared.
+export const loginSchema = z.object({
+  email: z
+    .string({ error: 'Email is required' })
+    .trim()
+    .toLowerCase()
+    .min(1, 'Email is required'),
+  password: z
+    .string({ error: 'Password is required' })
+    .min(1, 'Password is required'),
+});

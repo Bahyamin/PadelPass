@@ -58,8 +58,6 @@ model User {
   isVerified   Boolean   @default(false) @map("is_verified")
   isActive     Boolean   @default(true) @map("is_active")
   consentAt    DateTime? @map("consent_at") @db.Timestamptz(3)
-  failedLogins Int       @default(0) @map("failed_logins")
-  lockedUntil  DateTime? @map("locked_until") @db.Timestamptz(3)
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
 
   bookings        Booking[]      @relation("BookingPlayer")
@@ -68,6 +66,17 @@ model User {
   auditLogs       AuditLog[]
 
   @@map("users")
+}
+
+// Failed login attempts per email (RULE-11). Kept per email, not per user,
+// so an unknown email is locked exactly like a real account and the answer
+// never reveals which accounts exist.
+model LoginAttempt {
+  email       String    @id
+  failedCount Int       @default(0) @map("failed_count")
+  lockedUntil DateTime? @map("locked_until") @db.Timestamptz(3)
+
+  @@map("login_attempts")
 }
 
 model Court {

@@ -1,6 +1,8 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
+import { AuthProvider } from '../auth/AuthContext.jsx';
+import { fakeApi } from '../test/fakeApi.js';
 import Home from './Home.jsx';
 
 afterEach(() => {
@@ -10,18 +12,21 @@ afterEach(() => {
 
 describe('Home page', () => {
   it('displays the status returned by GET /api/health', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      json: () => Promise.resolve({ status: 'OK' }),
+    const fetchMock = fakeApi({
+      'GET /api/health': { status: 200, body: { status: 'OK' } },
+      'GET /api/users/me': { status: 401, body: {} },
     });
-    vi.stubGlobal('fetch', fetchMock);
 
     render(
       <MemoryRouter>
-        <Home />
+        <AuthProvider>
+          <Home />
+        </AuthProvider>
       </MemoryRouter>,
     );
 
     expect(await screen.findByText('OK')).toBeTruthy();
     expect(fetchMock).toHaveBeenCalledWith('/api/health');
+    expect(screen.getByRole('link', { name: 'Log in' })).toBeTruthy();
   });
 });
