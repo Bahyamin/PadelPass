@@ -11,4 +11,20 @@ export const config = {
   // RULE-11: 5 consecutive failed logins block the email for 15 minutes.
   maxFailedLogins: 5,
   lockMinutes: 15,
+
+  // Address of the front end, used to build the links sent by email.
+  appUrl: process.env.APP_URL || 'http://localhost:5173',
+
+  // RULE-10: a verification link expires after 48 hours.
+  verificationLinkHours: 48,
+
+  // Emails (SDD 3.3): Mailtrap in development. Without SMTP_HOST the emails
+  // are not sent but printed in the backend console.
+  smtp: {
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 2525,
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+  mailFrom: process.env.MAIL_FROM || 'PadelBook <no-reply@padelbook.local>',
 };

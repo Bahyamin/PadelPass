@@ -3,6 +3,7 @@ import request from 'supertest';
 import bcrypt from 'bcryptjs';
 import app from '../../src/app.js';
 import { prisma } from '../../src/config/db.js';
+import { resetDb } from '../helpers/resetDb.js';
 
 const PASSWORD = 'padel1234';
 const INVALID = 'Invalid email or password';
@@ -33,14 +34,11 @@ const failLogins = async (email, times) => {
 describe('POST /api/auth/login and /api/auth/logout', () => {
   beforeEach(async () => {
     passwordHash ??= await bcrypt.hash(PASSWORD, 4); // low cost: faster tests
-    await prisma.loginAttempt.deleteMany();
-    await prisma.booking.deleteMany();
-    await prisma.user.deleteMany();
+    await resetDb();
   });
 
   afterAll(async () => {
-    await prisma.loginAttempt.deleteMany();
-    await prisma.user.deleteMany();
+    await resetDb();
     await prisma.$disconnect();
   });
 

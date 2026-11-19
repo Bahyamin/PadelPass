@@ -3,6 +3,7 @@ import request from 'supertest';
 import bcrypt from 'bcryptjs';
 import app from '../../src/app.js';
 import { prisma } from '../../src/config/db.js';
+import { resetDb } from '../helpers/resetDb.js';
 
 const valid = {
   firstName: 'Ada',
@@ -20,12 +21,11 @@ const PASSWORD_RULE =
 
 describe('POST /api/auth/register', () => {
   beforeEach(async () => {
-    await prisma.booking.deleteMany();
-    await prisma.user.deleteMany();
+    await resetDb();
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany();
+    await resetDb();
     await prisma.$disconnect();
   });
 
