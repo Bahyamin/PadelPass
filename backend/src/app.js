@@ -1,6 +1,7 @@
 import cookieParser from 'cookie-parser';
 import express from 'express';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
+import adminRoutes from './modules/admin/admin.routes.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import healthRoutes from './modules/health/health.routes.js';
 import courtsRoutes from './modules/courts/courts.routes.js';
@@ -16,6 +17,7 @@ app.use('/api', courtsRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.use('/api', notFound);
 app.use(errorHandler);
