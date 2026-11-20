@@ -1,5 +1,6 @@
 import app from './app.js';
 import { config } from './config/index.js';
+import { startRemindersJob } from './jobs/reminders.job.js';
 
 // Without a secret, tokens could not be signed: refuse to start.
 if (!config.jwtSecret) {
@@ -8,4 +9,6 @@ if (!config.jwtSecret) {
 
 app.listen(config.port, () => {
   console.log(`Backend listening on http://localhost:${config.port}`);
+  // Scheduled jobs run with the server only, never in the tests (which use app.js).
+  startRemindersJob();
 });
