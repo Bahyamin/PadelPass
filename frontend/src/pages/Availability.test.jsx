@@ -1,5 +1,6 @@
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import Availability from './Availability.jsx';
 
 const grid = (date) => ({
@@ -37,6 +38,14 @@ const respondWithGrid = () =>
     }),
   );
 
+// The free cells are links, so the page needs a router.
+const renderPage = () =>
+  render(
+    <MemoryRouter>
+      <Availability />
+    </MemoryRouter>,
+  );
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -46,7 +55,7 @@ describe('Availability page', () => {
   it('shows the grid of today with a status in every cell', async () => {
     vi.stubGlobal('fetch', respondWithGrid());
 
-    render(<Availability />);
+    renderPage();
 
     expect(
       await screen.findByRole('rowheader', { name: 'Court 1' }),
@@ -60,7 +69,7 @@ describe('Availability page', () => {
     const fetchMock = respondWithGrid();
     vi.stubGlobal('fetch', fetchMock);
 
-    render(<Availability />);
+    renderPage();
     await screen.findByRole('table');
 
     const dayButtons = screen.getAllByRole('button');
@@ -91,10 +100,21 @@ describe('Availability page', () => {
       }),
     );
 
-    render(<Availability />);
+    renderPage();
 
     expect((await screen.findByRole('alert')).textContent).toBe(
       'date must be between 2026-11-16 and 2026-11-30',
+    );
+  });
+
+  it('links a free slot to the booking form with the day, court and time', async () => {
+    vi.stubGlobal('fetch', respondWithGrid());
+
+    renderPage();
+
+    const link = await screen.findByRole('link', { name: 'Free' });
+    expect(link.getAttribute('href')).toMatch(
+      /^\/book\/new\?date=\d{4}-\d{2}-\d{2}&courtId=1&start=08:30$/,
     );
   });
 });

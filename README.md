@@ -131,6 +131,23 @@ Returns the opening and closing time, the 30-minute `slots` of the day, and for 
 
 The page `/book` of the front end shows this grid.
 
+### GET /api/pricing/quote — price of a slot (player)
+
+Query: `courtId`, `date` (`YYYY-MM-DD`), `start` (`HH:00` or `HH:30`), `duration` (`60` or `90`). Returns the court, the end time and the `price` computed from the pricing rules, per 30-minute segment (e.g. Wednesday 18:00-19:30 at peak price = `"60.00"`).
+
+### POST /api/bookings — book a court (player)
+
+Body: `{ "courtId", "date", "start", "duration" }`, checked like the quote. Answers `201` with the booking: `status` `CONFIRMED`, `paymentStatus` `UNPAID`, and the `courtPrice` saved in the booking (a later price change does not alter it).
+
+| Status | Meaning |
+| --- | --- |
+| `400` | `VALIDATION_ERROR`, `SLOT_IN_PAST`, `OUTSIDE_BOOKING_WINDOW` (more than 14 days ahead), `OUTSIDE_OPENING_HOURS`, `NO_PRICING_RULE` |
+| `401` | Not logged in |
+| `404` | `COURT_NOT_FOUND`: unknown or inactive court |
+| `409` | `COURT_CLOSED`: the court is closed during the slot |
+
+
+
 ## Database
 
 PostgreSQL 16 runs in Docker (`docker-compose.yml`), on port **5433** of your machine so it does not clash with a locally installed PostgreSQL. The schema is managed with Prisma (`backend/prisma/schema.prisma`) and follows the SDD, section 4.1: `users`, `courts`, `court_closures`, `opening_hours`, `pricing_rules`, `settings`, `bookings`, `booking_equipment`, `equipment_types`, `equipment_items`, `rentals`, `notifications`, `audit_logs`.
