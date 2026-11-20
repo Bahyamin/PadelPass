@@ -116,6 +116,23 @@ Answers `200` with the user, or `401 UNAUTHORIZED` without a valid token.
 
 Protected routes use two middlewares: `authenticate` (valid JWT cookie, else `401`) and `requireRole(...)` (role allowed, else `403`).
 
+### Club configuration — `/api/admin` (administrator)
+
+Every route needs an `ADMIN` login: `401` without login, `403 FORBIDDEN` for any other role. Each change is written to `audit_logs`. Existing bookings keep the price saved when they were booked.
+
+| Route | Body and answer |
+| --- | --- |
+| `GET /api/admin/opening-hours` | The 7 days: `{ dayOfWeek, closed, openTime, closeTime }` (0 = Sunday) |
+| `PUT /api/admin/opening-hours` | Replaces the week: 7 entries, `openTime` before `closeTime` on `:00` or `:30`, or `closed: true` |
+| `GET /api/admin/pricing-rules` | The rules, by day and start time; prices as strings (`"40.00"`) |
+| `POST /api/admin/pricing-rules` | `{ dayOfWeek, startTime, endTime, pricePerHour, label }`: `201`; `409 PRICING_RULE_OVERLAP` if it overlaps a rule of the same day |
+| `PATCH /api/admin/pricing-rules/:id` | Any of these fields; `404` for an unknown rule |
+| `DELETE /api/admin/pricing-rules/:id` | `204` |
+| `GET /api/admin/settings` | `{ maxActiveBookings, bookingWindowDays, cancellationDeadlineHours, equipmentChangeDeadlineHours }` |
+| `PUT /api/admin/settings` | Any of these, as whole numbers; `400` for an unknown parameter or a value out of range |
+
+The page `/admin/settings` of the front end (link "Club settings" on the home page, for administrators) edits all three.
+
 ### GET /api/courts — list the active courts (public)
 
 Returns `[{ "id", "name", "type" }]`.
