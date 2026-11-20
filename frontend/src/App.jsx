@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router';
 import RequireAuth from './auth/RequireAuth.jsx';
 import Availability from './pages/Availability.jsx';
+import BookCourt from './pages/BookCourt.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import Profile from './pages/Profile.jsx';
@@ -16,6 +17,14 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/book" element={<Availability />} />
+      <Route
+        path="/book/new"
+        element={
+          <RequireAuth>
+            <BookCourt />
+          </RequireAuth>
+        }
+      />
       <Route
         path="/profile"
         element={
