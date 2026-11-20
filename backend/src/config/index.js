@@ -27,4 +27,8 @@ export const config = {
     pass: process.env.SMTP_PASS,
   },
   mailFrom: process.env.MAIL_FROM || 'PadelBook <no-reply@padelbook.local>',
+
+  // FR-31, AC-13: a reminder email 24 hours (+/- 15 minutes) before each
+  // booking, checked by a job every 15 minutes (SDD 3.3).
+  reminder: { leadHours: 24, toleranceMinutes: 15, cron: '*/15 * * * *' },
 };
