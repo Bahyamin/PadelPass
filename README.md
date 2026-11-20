@@ -147,6 +147,14 @@ Integrity rules of the SDD (section 4.2) are enforced by PostgreSQL itself, in t
 
 The backend tests need the PostgreSQL container to be running. They use a separate `padelpass_test` database, created and migrated automatically, so they never touch the development data.
 
+## Scheduled jobs
+
+When the backend starts (`npm run dev` or `npm start`), `server.js` also starts a job with node-cron (`src/jobs/reminders.job.js`), every 15 minutes, Paris time:
+
+- **Booking reminders** (FR-31, AC-13): an email to the player of each confirmed booking that starts in 24 hours (± 15 minutes). Each reminder is logged in `notifications` with the type `BOOKING_REMINDER`, so a booking is reminded only once; a `FAILED` email is tried again at the next run while the booking is still in the window. Cancelled bookings and guest bookings get no reminder.
+
+The tests never start the job: they use `app.js`, and only `server.js` starts it.
+
 ## Scripts (from the root)
 
 | Command          | Description                                 |
