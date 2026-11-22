@@ -120,6 +120,12 @@ Protected routes use two middlewares: `authenticate` (valid JWT cookie, else `40
 
 Returns `[{ "id", "name", "type" }]`.
 
+### GET /api/equipment/availability — equipment for a slot (public)
+
+Query: `date` (`YYYY-MM-DD`), `start` (`HH:00` or `HH:30`), `duration` (`60` or `90`). Returns, for each active equipment type, its `name`, `category`, `rentalPrice` and the `available` quantity: the items in service (not `DAMAGED`, `MAINTENANCE` or `LOST`) minus the quantities reserved by the confirmed bookings that overlap the slot, never below 0. An invalid slot gets `400 VALIDATION_ERROR`.
+
+The page `/equipment` of the front end ("Equipment for rent" on the home page) shows this table.
+
 ### GET /api/availability?date=YYYY-MM-DD — availability grid of a day (public)
 
 Returns the opening and closing time, the 30-minute `slots` of the day, and for each active court the status of every slot: `FREE`, `BOOKED` (confirmed booking), `CLOSED` (court closure) or `PAST`.
