@@ -3,6 +3,7 @@ import express from 'express';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
 import adminRoutes from './modules/admin/admin.routes.js';
 import authRoutes from './modules/auth/auth.routes.js';
+import bookingsRoutes from './modules/bookings/bookings.routes.js';
 import healthRoutes from './modules/health/health.routes.js';
 import courtsRoutes from './modules/courts/courts.routes.js';
 import usersRoutes from './modules/users/users.routes.js';
@@ -16,6 +17,7 @@ app.use(cookieParser()); // fills req.cookies, used by the authenticate middlewa
 app.use('/api', courtsRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api', bookingsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/admin', adminRoutes);
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 
 const BOOKING_WINDOW_DAYS = 14;
 
@@ -37,7 +38,7 @@ const dayLabel = (day) =>
   });
 
 // Court availability page (FR-08, UC-03): a date selector and a grid of
-// courts by 30-minute slots.
+// courts by 30-minute slots. A free slot links to the booking form (FR-09).
 export default function Availability() {
   const days = nextDays();
   const [day, setDay] = useState(days[0]);
@@ -106,7 +107,16 @@ export default function Availability() {
                 <th scope="row">{court.name}</th>
                 {court.slots.map((slot) => (
                   <td key={slot.time} data-status={slot.status}>
-                    {STATUS_LABELS[slot.status]}
+                    {slot.status === 'FREE' ? (
+                      // A free slot opens the booking form, already filled in.
+                      <Link
+                        to={`/book/new?date=${grid.date}&courtId=${court.id}&start=${slot.time}`}
+                      >
+                        {STATUS_LABELS.FREE}
+                      </Link>
+                    ) : (
+                      STATUS_LABELS[slot.status]
+                    )}
                   </td>
                 ))}
               </tr>
