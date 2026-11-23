@@ -11,10 +11,38 @@ import {
   dayOfWeek,
 } from '../../utils/time.js';
 import { courtsRepository } from '../courts/courts.repository.js';
-import { bookingsRepository } from './bookings.repository.js';
+import {
+  bookingsRepository,
+  isOverlapError,
+  isWriteConflict,
+} from './bookings.repository.js';
 import { computeCourtPrice, formatPrice } from './pricing.js';
 
 const DEFAULT_BOOKING_WINDOW_DAYS = 14; // RULE-03
+const SAVE_ATTEMPTS = 3;
+
+// RULE-05, FR-11, AC-06: the slot is already taken on this court.
+const slotUnavailable = () =>
+  new ConflictError('SLOT_UNAVAILABLE', 'This court is already booked');
+
+// Runs save(), the insert of a booking, and turns the refusals of the
+// database into clear answers (409 instead of 500):
+// - no_overlap: another request booked the slot between our check and our
+//   insert -> SLOT_UNAVAILABLE;
+// - deadlock / write conflict: PostgreSQL cancelled our insert because another
+//   one was checking the same slot -> try again; the next attempt sees the
+//   other booking (SLOT_UNAVAILABLE) or succeeds if it was rolled back.
+async function saveBooking(save) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await save();
+    } catch (err) {
+      if (isOverlapError(err)) throw slotUnavailable();
+      if (isWriteConflict(err) && attempt < SAVE_ATTEMPTS) continue;
+      throw err;
+    }
+  }
+}
 
 // Checks that a slot can be booked and computes its price. Used by the quote
 // and by the booking itself, so the summary shows exactly what will be saved.
@@ -66,6 +94,19 @@ async function checkSlot({ courtId, date, start, duration }, now) {
     );
   }
 
+  // RULE-05: the slot is free on this court. This check gives the answer
+  // early (also for the quote); the no_overlap constraint of the database
+  // still decides when two requests arrive at the same time.
+  if (
+    await bookingsRepository.findOverlappingBooking(
+      court.id,
+      startTime,
+      endTime,
+    )
+  ) {
+    throw slotUnavailable();
+  }
+
   const priceCents = computeCourtPrice({
     dayOfWeek: dayOfWeek(date),
     start,
@@ -110,16 +151,18 @@ export const bookingsService = {
   // into the booking, so a later change of the pricing rules does not change it.
   async create(userId, slot, now = new Date()) {
     const checked = await checkSlot(slot, now);
-    const booking = await bookingsRepository.create({
-      userId,
-      createdById: userId,
-      courtId: checked.court.id,
-      startTime: checked.startTime,
-      endTime: checked.endTime,
-      courtPrice: checked.price,
-      status: 'CONFIRMED',
-      paymentStatus: 'UNPAID',
-    });
+    const booking = await saveBooking(() =>
+      bookingsRepository.create({
+        userId,
+        createdById: userId,
+        courtId: checked.court.id,
+        startTime: checked.startTime,
+        endTime: checked.endTime,
+        courtPrice: checked.price,
+        status: 'CONFIRMED',
+        paymentStatus: 'UNPAID',
+      }),
+    );
     return {
       id: booking.id,
       courtId: booking.courtId,

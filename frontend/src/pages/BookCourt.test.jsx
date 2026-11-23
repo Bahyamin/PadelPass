@@ -140,4 +140,50 @@ describe('Book a court page', () => {
       null,
     );
   });
+
+  it('refreshes the grid when the slot was booked in the meantime', async () => {
+    const routes = {
+      [`GET /api/availability?date=${DAY}`]: { status: 200, body: grid },
+      [QUOTE_URL]: { status: 200, body: summary },
+      'POST /api/bookings': {
+        status: 409,
+        body: {
+          error: {
+            code: 'SLOT_UNAVAILABLE',
+            message: 'This court is already booked',
+          },
+        },
+      },
+    };
+    const fetchMock = fakeApi(routes);
+
+    renderPage();
+    await screen.findByRole('option', { name: 'Court 1' });
+    fireEvent.click(screen.getByLabelText('90 minutes'));
+    fireEvent.click(screen.getByRole('button', { name: 'See the price' }));
+    await screen.findByRole('region', { name: 'Summary' });
+
+    // Somebody else books 18:00 before the confirmation.
+    const taken = structuredClone(grid);
+    taken.courts[0].slots[1].status = 'BOOKED';
+    routes[`GET /api/availability?date=${DAY}`] = { status: 200, body: taken };
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Confirm the booking' }),
+    );
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'This court is already booked',
+    );
+    expect(screen.queryByRole('region', { name: 'Summary' })).toBe(null);
+    await vi.waitFor(() => {
+      const times = screen
+        .getByLabelText('Start time')
+        .querySelectorAll('option:not([value=""])');
+      expect([...times].map((o) => o.textContent)).toEqual(['18:30']);
+    });
+    const gridCalls = fetchMock.mock.calls.filter(
+      ([url]) => url === `/api/availability?date=${DAY}`,
+    );
+    expect(gridCalls).toHaveLength(2);
+  });
 });

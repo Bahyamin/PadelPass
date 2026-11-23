@@ -17,12 +17,13 @@ const dayLabel = (day) =>
     month: 'long',
   });
 
-// Sends a request to the API and returns [data, null] or [null, error message].
+// Sends a request to the API and returns [data, null] or
+// [null, error message, error code].
 async function callApi(url, options) {
   try {
     const res = await fetch(url, options);
     const data = await res.json();
-    return res.ok ? [data, null] : [null, data.error.message];
+    return res.ok ? [data, null] : [null, data.error.message, data.error.code];
   } catch {
     return [null, 'Could not reach the server, try again later'];
   }
@@ -38,22 +39,24 @@ export default function BookCourt() {
   const [start, setStart] = useState(params.get('start') ?? '');
   const [duration, setDuration] = useState(60);
   const [grid, setGrid] = useState(null);
+  const [gridVersion, setGridVersion] = useState(0);
   const [summary, setSummary] = useState(null);
   const [booking, setBooking] = useState(null);
   const [error, setError] = useState('');
 
   // The grid of the day gives the courts and the start times to choose from.
+  // It is loaded again when gridVersion changes (slot taken in the meantime).
   useEffect(() => {
     let cancelled = false;
     callApi(`/api/availability?date=${date}`).then(([data, message]) => {
       if (cancelled) return;
       setGrid(data);
-      setError(message ?? '');
+      if (message) setError(message);
     });
     return () => {
       cancelled = true;
     };
-  }, [date]);
+  }, [date, gridVersion]);
 
   const court = grid?.courts.find((c) => String(c.id) === courtId);
   const freeTimes = court
@@ -76,7 +79,7 @@ export default function BookCourt() {
   }
 
   async function handleConfirm() {
-    const [data, message] = await callApi('/api/bookings', {
+    const [data, message, code] = await callApi('/api/bookings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -88,6 +91,13 @@ export default function BookCourt() {
     });
     setBooking(data);
     setError(message ?? '');
+    // FR-11: somebody booked this slot in the meantime. The summary is hidden
+    // and the grid is loaded again, so the taken time leaves the list.
+    if (code === 'SLOT_UNAVAILABLE') {
+      setSummary(null);
+      setStart('');
+      setGridVersion((version) => version + 1);
+    }
   }
 
   if (booking) {
