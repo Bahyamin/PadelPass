@@ -43,6 +43,9 @@ export default function Home() {
       <p>
         <Link to="/book">Book a court</Link>
       </p>
+      <p>
+        <Link to="/equipment">Equipment for rent</Link>
+      </p>
     </main>
   );
 }

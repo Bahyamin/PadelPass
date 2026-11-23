@@ -6,6 +6,7 @@ import authRoutes from './modules/auth/auth.routes.js';
 import bookingsRoutes from './modules/bookings/bookings.routes.js';
 import healthRoutes from './modules/health/health.routes.js';
 import courtsRoutes from './modules/courts/courts.routes.js';
+import equipmentRoutes from './modules/equipment/equipment.routes.js';
 import usersRoutes from './modules/users/users.routes.js';
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(cookieParser()); // fills req.cookies, used by the authenticate middlewa
 
 // One router per module (SDD 3.2), all under /api.
 app.use('/api', courtsRoutes);
+app.use('/api/equipment', equipmentRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api', bookingsRoutes);
