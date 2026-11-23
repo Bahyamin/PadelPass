@@ -168,6 +168,7 @@ Body: `{ "courtId", "date", "start", "duration" }`, checked like the quote. Answ
 | `401` | Not logged in |
 | `404` | `COURT_NOT_FOUND`: unknown or inactive court |
 | `409` | `COURT_CLOSED`: the court is closed during the slot |
+| `409` | `SLOT_UNAVAILABLE`: "This court is already booked" (also for the quote). The `no_overlap` constraint of the database decides between two simultaneous requests: exactly one succeeds, the other gets this `409`, never a `500` |
 
 
 
