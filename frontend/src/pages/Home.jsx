@@ -28,6 +28,11 @@ export default function Home() {
               <Link to="/admin/settings">Club settings</Link>
             </p>
           )}
+          {hasRole(user, ADMIN) && (
+            <p>
+              <Link to="/admin/courts">Courts and closures</Link>
+            </p>
+          )}
           <p>
             <Link to="/my-bookings">My bookings</Link>
           </p>
