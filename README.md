@@ -143,6 +143,19 @@ Every route needs an `ADMIN` login: `401` without login, `403 FORBIDDEN` for any
 
 The page `/admin/settings` of the front end (link "Club settings" on the home page, for administrators) edits all three.
 
+### Courts and closures — `/api/admin/courts` (administrator)
+
+Every route needs an `ADMIN` login (`401` / `403` otherwise) and each change is written to `audit_logs` (FR-24, UC-14).
+
+| Route | Body and answer |
+| --- | --- |
+| `GET /api/admin/courts` | Every court, active or not: `{ id, name, type, isActive, closures }`, with the closures not finished yet |
+| `POST /api/admin/courts` | `{ name, type }` (`INDOOR` or `OUTDOOR`): `201`; `409 COURT_NAME_TAKEN` if the name exists (whatever the case) |
+| `PATCH /api/admin/courts/:id` | Any of `name`, `type`, `isActive`. An inactive court leaves the grid and cannot be booked. `409 COURT_HAS_BOOKINGS` when deactivating a court that still has bookings to come: close it for the period first |
+| `POST /api/admin/courts/:id/closures` | `{ start, end, reason }`, club time as `"2026-11-30T08:00"`: `201` with the closure and the `cancelledBookings`. `400 CLOSURE_IN_PAST` if the period is over |
+
+A closure shows the court `CLOSED` in the grid during the period, and refuses new bookings (`409 COURT_CLOSED`). In the same transaction, the confirmed bookings of the court that overlap it are cancelled, and each player gets the cancellation email (`BOOKING_CANCELLATION` in `notifications`, after the commit). The page `/admin/courts` of the front end ("Courts and closures" on the home page, for administrators) does all of this.
+
 ### GET /api/courts — list the active courts (public)
 
 Returns `[{ "id", "name", "type" }]`.
