@@ -2,6 +2,7 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import { errorHandler, notFound } from './middlewares/errorHandler.js';
 import adminRoutes from './modules/admin/admin.routes.js';
+import adminCourtsRoutes from './modules/courts/adminCourts.routes.js';
 import authRoutes from './modules/auth/auth.routes.js';
 import bookingsRoutes from './modules/bookings/bookings.routes.js';
 import myBookingsRoutes from './modules/bookings/myBookings.routes.js';
@@ -24,6 +25,7 @@ app.use('/api', bookingsRoutes);
 app.use('/api', myBookingsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminCourtsRoutes);
 
 app.use('/api', notFound);
 app.use(errorHandler);
