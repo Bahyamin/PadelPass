@@ -116,6 +116,16 @@ Answers `200` with the user, or `401 UNAUTHORIZED` without a valid token.
 
 Protected routes use two middlewares: `authenticate` (valid JWT cookie, else `401`) and `requireRole(...)` (role allowed, else `403`).
 
+**Access by role** (FR-07, NFR-08, AC-03). The server decides, from the role stored in the login token:
+
+| Access | Roles | Routes |
+| --- | --- | --- |
+| Public | everybody | `/api/health`, `/api/courts`, `/api/availability`, `/api/equipment/availability`, `/api/auth/*` |
+| Player | any logged-in user | `/api/users/me`, `/api/pricing/quote`, `/api/bookings`, `/api/bookings/me` |
+| Admin | `ADMIN` | `/api/admin/*`: `403 FORBIDDEN` for `PLAYER`, `STAFF` and `EQUIPMENT_MANAGER` |
+
+`backend/tests/integration/roleAccess.test.js` checks this matrix for every route and every role: **add each new route to it**. In the front end, `<RequireAuth roles={ADMIN}>` (lists in `src/auth/roles.js`) sends a user without the role to the home page, and the home page only shows the links of the user's role.
+
 ### Club configuration — `/api/admin` (administrator)
 
 Every route needs an `ADMIN` login: `401` without login, `403 FORBIDDEN` for any other role. Each change is written to `audit_logs`. Existing bookings keep the price saved when they were booked.
