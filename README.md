@@ -162,6 +162,8 @@ Query: `courtId`, `date` (`YYYY-MM-DD`), `start` (`HH:00` or `HH:30`), `duration
 
 Body: `{ "courtId", "date", "start", "duration" }`, checked like the quote. Answers `201` with the booking: `status` `CONFIRMED`, `paymentStatus` `UNPAID`, and the `courtPrice` saved in the booking (a later price change does not alter it).
 
+Once the booking is saved, the player gets a confirmation email in French (FR-30, AC-12): date, time, court, equipment and price. It is sent in the background, so the answer never waits for it. If the email provider fails, the booking stays valid: the email is retried 3 times (after 1, 2 and 4 seconds), and logged in `notifications` as `SENT` or `FAILED` (type `BOOKING_CONFIRMATION`). The same template is ready for changes (`BOOKING_UPDATE`) and cancellations (`BOOKING_CANCELLATION`): `bookingEmailsService.notify('UPDATED' | 'CANCELLED', bookingId)`.
+
 | Status | Meaning |
 | --- | --- |
 | `400` | `VALIDATION_ERROR`, `SLOT_IN_PAST`, `OUTSIDE_BOOKING_WINDOW` (more than 14 days ahead), `OUTSIDE_OPENING_HOURS`, `NO_PRICING_RULE` |
