@@ -12,6 +12,7 @@ import {
   dayOfWeek,
 } from '../../utils/time.js';
 import { courtsRepository } from '../courts/courts.repository.js';
+import { bookingEmailsService } from '../notifications/bookingEmails.service.js';
 import {
   bookingsRepository,
   isOverlapError,
@@ -203,6 +204,8 @@ export const bookingsService = {
     if (!result.booking) throw limitReached(maxActive, result.active);
 
     const { booking } = result;
+    // FR-30: confirmation email, sent after the commit without waiting for it.
+    bookingEmailsService.notify('CREATED', booking.id);
     return {
       id: booking.id,
       courtId: booking.courtId,
