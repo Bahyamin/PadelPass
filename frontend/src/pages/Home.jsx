@@ -28,6 +28,9 @@ export default function Home() {
             </p>
           )}
           <p>
+            <Link to="/my-bookings">My bookings</Link>
+          </p>
+          <p>
             <Link to="/profile">My profile</Link>{' '}
             <button type="button" onClick={logout}>
               Log out
