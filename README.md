@@ -175,6 +175,12 @@ Once the booking is saved, the player gets a confirmation email in French (FR-30
 
 
 
+### GET /api/bookings/me — my bookings (player)
+
+Returns `{ "upcoming": [...], "past": [...] }`, only with the bookings of the logged-in player (the id comes from the login cookie). `upcoming` holds the bookings not finished yet, soonest first; `past` the finished ones, most recent first. Each booking gives `date`, `start`, `end`, `duration`, `courtName`, `equipment` (`name`, `quantity`, `unitPrice`), `courtPrice`, `equipmentPrice`, `feesTotal`, `totalPrice`, `status` and `paymentStatus`. `401` without login.
+
+The page `/my-bookings` of the front end ("My bookings" on the home page, once logged in) shows both lists.
+
 ## Database
 
 PostgreSQL 16 runs in Docker (`docker-compose.yml`), on port **5433** of your machine so it does not clash with a locally installed PostgreSQL. The schema is managed with Prisma (`backend/prisma/schema.prisma`) and follows the SDD, section 4.1: `users`, `courts`, `court_closures`, `opening_hours`, `pricing_rules`, `settings`, `bookings`, `booking_equipment`, `equipment_types`, `equipment_items`, `rentals`, `notifications`, `audit_logs`.
