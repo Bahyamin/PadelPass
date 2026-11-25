@@ -3,7 +3,7 @@ import request from 'supertest';
 import bcrypt from 'bcryptjs';
 import app from '../../src/app.js';
 import { prisma } from '../../src/config/db.js';
-import { resetDb } from '../helpers/resetDb.js';
+import { clearBookings, resetDb } from '../helpers/resetDb.js';
 import { addDays, clubTime, clubToday } from '../../src/utils/time.js';
 
 const PASSWORD = 'padel1234';
@@ -85,7 +85,7 @@ describe('POST /api/bookings limits the active bookings of a player', () => {
   });
 
   beforeEach(async () => {
-    await prisma.booking.deleteMany();
+    await clearBookings();
     await setLimit('3');
   });
 
