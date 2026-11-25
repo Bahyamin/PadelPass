@@ -13,7 +13,7 @@ import bcrypt from 'bcryptjs';
 import app from '../../src/app.js';
 import { prisma } from '../../src/config/db.js';
 import { bookingsRepository } from '../../src/modules/bookings/bookings.repository.js';
-import { resetDb } from '../helpers/resetDb.js';
+import { clearBookings, resetDb } from '../helpers/resetDb.js';
 import { addDays, clubTime, clubToday } from '../../src/utils/time.js';
 
 const PASSWORD = 'padel1234';
@@ -94,7 +94,7 @@ describe('POST /api/bookings refuses double bookings', () => {
   });
 
   beforeEach(async () => {
-    await prisma.booking.deleteMany();
+    await clearBookings();
   });
 
   afterEach(() => {

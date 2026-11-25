@@ -31,4 +31,8 @@ export const config = {
   // FR-31, AC-13: a reminder email 24 hours (+/- 15 minutes) before each
   // booking, checked by a job every 15 minutes (SDD 3.3).
   reminder: { leadHours: 24, toleranceMinutes: 15, cron: '*/15 * * * *' },
+
+  // SDD 6.5, PAD-39: a booking email is retried 3 times with exponential
+  // back-off (1 s, 2 s, 4 s), well within the minute of FR-30.
+  email: { retries: 3, retryDelayMs: 1000 },
 };
