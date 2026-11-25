@@ -6,6 +6,7 @@ import {
 import {
   addDays,
   addMinutes,
+  CLUB_TIME_ZONE,
   clubTime,
   clubToday,
   dayOfWeek,
@@ -19,6 +20,7 @@ import {
 import { computeCourtPrice, formatPrice } from './pricing.js';
 
 const DEFAULT_BOOKING_WINDOW_DAYS = 14; // RULE-03
+const DEFAULT_MAX_ACTIVE_BOOKINGS = 3; // RULE-04
 const SAVE_ATTEMPTS = 3;
 
 // RULE-05, FR-11, AC-06: the slot is already taken on this court.
@@ -42,6 +44,32 @@ async function saveBooking(save) {
       throw err;
     }
   }
+}
+
+// "18:00", in the club time zone.
+const clubClock = (instant) =>
+  new Intl.DateTimeFormat('en-GB', {
+    timeZone: CLUB_TIME_ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(instant);
+
+// RULE-04, FR-12, AC-07: the message lists the active bookings, e.g.
+// "... active bookings: Court 1 on 2026-11-25 from 18:00 to 19:30; ...".
+function limitReached(maxActive, active) {
+  const list = active
+    .map(
+      (b) =>
+        `${b.court.name} on ${clubToday(b.startTime)} ` +
+        `from ${clubClock(b.startTime)} to ${clubClock(b.endTime)}`,
+    )
+    .join('; ');
+  return new ConflictError(
+    'LIMIT_REACHED',
+    `You already have ${active.length} active bookings, the maximum is ` +
+      `${maxActive}. Your active bookings: ${list}`,
+  );
 }
 
 // Checks that a slot can be booked and computes its price. Used by the quote
@@ -151,18 +179,30 @@ export const bookingsService = {
   // into the booking, so a later change of the pricing rules does not change it.
   async create(userId, slot, now = new Date()) {
     const checked = await checkSlot(slot, now);
-    const booking = await saveBooking(() =>
-      bookingsRepository.create({
-        userId,
-        createdById: userId,
-        courtId: checked.court.id,
-        startTime: checked.startTime,
-        endTime: checked.endTime,
-        courtPrice: checked.price,
-        status: 'CONFIRMED',
-        paymentStatus: 'UNPAID',
-      }),
+    // RULE-04: the limit is a booking parameter of the admin (default 3).
+    const maxActive = Number(
+      (await courtsRepository.findSetting('max_active_bookings')) ??
+        DEFAULT_MAX_ACTIVE_BOOKINGS,
     );
+    const result = await saveBooking(() =>
+      bookingsRepository.createWithinLimit(
+        {
+          userId,
+          createdById: userId,
+          courtId: checked.court.id,
+          startTime: checked.startTime,
+          endTime: checked.endTime,
+          courtPrice: checked.price,
+          status: 'CONFIRMED',
+          paymentStatus: 'UNPAID',
+        },
+        maxActive,
+        now,
+      ),
+    );
+    if (!result.booking) throw limitReached(maxActive, result.active);
+
+    const { booking } = result;
     return {
       id: booking.id,
       courtId: booking.courtId,

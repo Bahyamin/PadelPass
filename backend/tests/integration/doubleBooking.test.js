@@ -209,7 +209,7 @@ describe('POST /api/bookings refuses double bookings', () => {
     const deadlock = Object.assign(new Error('write conflict or deadlock'), {
       code: 'P2034',
     });
-    const save = vi.spyOn(bookingsRepository, 'create');
+    const save = vi.spyOn(bookingsRepository, 'createWithinLimit');
     save.mockRejectedValueOnce(deadlock);
 
     const res = await adaAgent.post('/api/bookings').send(slot());

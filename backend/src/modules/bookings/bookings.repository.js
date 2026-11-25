@@ -54,10 +54,32 @@ export const bookingsRepository = {
     });
   },
 
-  create(data) {
-    return prisma.booking.create({
-      data,
-      include: { court: { select: { name: true } } },
+  // Creates the booking of a player if they have fewer than maxActive active
+  // bookings (RULE-04, SDD 6.2). Active = confirmed and starting after now:
+  // cancelled and past bookings do not count.
+  // The transaction first locks the player's row (SELECT ... FOR UPDATE), so
+  // two requests of the same player run one after the other and cannot both
+  // pass the limit. Returns { booking, active }; booking is null when the
+  // limit is reached, and active lists the player's active bookings.
+  createWithinLimit(data, maxActive, now) {
+    return prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM users WHERE id = ${data.userId} FOR UPDATE`;
+      const active = await tx.booking.findMany({
+        where: {
+          userId: data.userId,
+          status: 'CONFIRMED',
+          startTime: { gt: now },
+        },
+        include: { court: { select: { name: true } } },
+        orderBy: { startTime: 'asc' },
+      });
+      if (active.length >= maxActive) return { booking: null, active };
+
+      const booking = await tx.booking.create({
+        data,
+        include: { court: { select: { name: true } } },
+      });
+      return { booking, active };
     });
   },
 };
