@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router';
 import RequireAuth from './auth/RequireAuth.jsx';
+import { ADMIN } from './auth/roles.js';
 import AdminSettings from './pages/AdminSettings.jsx';
 import Availability from './pages/Availability.jsx';
 import BookCourt from './pages/BookCourt.jsx';
@@ -48,7 +49,7 @@ export default function App() {
       <Route
         path="/admin/settings"
         element={
-          <RequireAuth>
+          <RequireAuth roles={ADMIN}>
             <AdminSettings />
           </RequireAuth>
         }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { useAuth } from '../auth/AuthContext.jsx';
+import { ADMIN, hasRole } from '../auth/roles.js';
 
 export default function Home() {
   const { user, logout } = useAuth();
@@ -22,7 +23,7 @@ export default function Home() {
       {user ? (
         <>
           <p>Hello {user.firstName}</p>
-          {user.role === 'ADMIN' && (
+          {hasRole(user, ADMIN) && (
             <p>
               <Link to="/admin/settings">Club settings</Link>
             </p>
