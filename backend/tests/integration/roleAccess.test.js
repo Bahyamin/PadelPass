@@ -33,6 +33,8 @@ const LOGGED_IN_ROUTES = [
   ['GET', '/api/pricing/quote'],
   ['POST', '/api/bookings'],
   ['GET', '/api/bookings/me'],
+  ['GET', '/api/bookings/1/equipment'],
+  ['PUT', '/api/bookings/1/equipment'],
 ];
 
 // Administrators only: requireRole(ADMIN).

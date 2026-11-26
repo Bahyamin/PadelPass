@@ -88,7 +88,13 @@ describe('My bookings page', () => {
       '73.00 EUR',
       'Confirmed',
       'To pay at the club',
+      'Change equipment',
     ]);
+    expect(
+      within(row)
+        .getByRole('link', { name: 'Change equipment' })
+        .getAttribute('href'),
+    ).toBe('/my-bookings/2/equipment');
 
     const [, pastRow] = within(pastSection).getAllByRole('row');
     expect(pastRow.textContent).toMatch(/Court 2/);

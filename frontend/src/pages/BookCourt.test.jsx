@@ -31,6 +31,31 @@ const grid = {
   ],
 };
 
+const EQUIPMENT_URL = `GET /api/equipment/availability?date=${DAY}&start=18%3A00&duration=90`;
+
+// FR-17: the equipment of the slot, with the quantity still available.
+const equipment = {
+  date: DAY,
+  start: '18:00',
+  end: '19:30',
+  equipment: [
+    {
+      id: 1,
+      name: 'Racket',
+      category: 'RACKET',
+      rentalPrice: '4.00',
+      available: 3,
+    },
+    {
+      id: 2,
+      name: 'Balls',
+      category: 'BALLS',
+      rentalPrice: '5.00',
+      available: 2,
+    },
+  ],
+};
+
 const QUOTE_URL = `GET /api/pricing/quote?courtId=1&date=${DAY}&start=18%3A00&duration=90`;
 
 const summary = {
@@ -69,6 +94,9 @@ describe('Book a court page', () => {
           status: 'CONFIRMED',
           paymentStatus: 'UNPAID',
           courtPrice: '60.00',
+          equipment: [],
+          equipmentPrice: '0.00',
+          totalPrice: '60.00',
         },
       },
     });
@@ -81,7 +109,7 @@ describe('Book a court page', () => {
     const section = await screen.findByRole('region', { name: 'Summary' });
     expect(section.textContent).toMatch(/Court 1, Wednesday 25 November/);
     expect(section.textContent).toMatch(/18:00 to 19:30 \(90 minutes\)/);
-    expect(section.textContent).toMatch(/Price: 60\.00 EUR/);
+    expect(section.textContent).toMatch(/Total price: 60\.00 EUR/);
 
     fireEvent.click(
       screen.getByRole('button', { name: 'Confirm the booking' }),
@@ -185,5 +213,100 @@ describe('Book a court page', () => {
       ([url]) => url === `/api/availability?date=${DAY}`,
     );
     expect(gridCalls).toHaveLength(2);
+  });
+
+  it('adds rackets and balls: the total price is updated and sent with the booking', async () => {
+    const fetchMock = fakeApi({
+      [`GET /api/availability?date=${DAY}`]: { status: 200, body: grid },
+      [QUOTE_URL]: { status: 200, body: summary },
+      [EQUIPMENT_URL]: { status: 200, body: equipment },
+      'POST /api/bookings': {
+        status: 201,
+        body: {
+          ...summary,
+          id: 7,
+          courtPrice: '60.00',
+          equipment: [
+            { typeId: 1, name: 'Racket', quantity: 2, unitPrice: '4.00' },
+            { typeId: 2, name: 'Balls', quantity: 1, unitPrice: '5.00' },
+          ],
+          equipmentPrice: '13.00',
+          totalPrice: '73.00',
+        },
+      },
+    });
+
+    renderPage();
+    await screen.findByRole('option', { name: 'Court 1' });
+    fireEvent.click(screen.getByLabelText('90 minutes'));
+    fireEvent.click(screen.getByRole('button', { name: 'See the price' }));
+    const racket = await screen.findByLabelText('Racket quantity');
+    expect(racket.getAttribute('max')).toBe('3');
+
+    fireEvent.change(racket, { target: { value: '2' } });
+    fireEvent.change(screen.getByLabelText('Balls quantity'), {
+      target: { value: '1' },
+    });
+    const section = screen.getByRole('region', { name: 'Summary' });
+    expect(section.textContent).toMatch(/Equipment: 13\.00 EUR/);
+    expect(section.textContent).toMatch(/Total price: 73\.00 EUR/);
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Confirm the booking' }),
+    );
+
+    const status = await screen.findByRole('status');
+    expect(status.textContent).toMatch(/18:00 to 19:30: 73\.00 EUR/);
+    expect(screen.getByText('Equipment: 2 × Racket, 1 × Balls')).toBeTruthy();
+    const [, options] = fetchMock.mock.calls.at(-1);
+    expect(JSON.parse(options.body)).toEqual({
+      courtId: 1,
+      date: DAY,
+      start: '18:00',
+      duration: 90,
+      equipment: [
+        { typeId: 1, quantity: 2 },
+        { typeId: 2, quantity: 1 },
+      ],
+    });
+  });
+
+  it('shows the message when the equipment is no longer available', async () => {
+    const routes = {
+      [`GET /api/availability?date=${DAY}`]: { status: 200, body: grid },
+      [QUOTE_URL]: { status: 200, body: summary },
+      [EQUIPMENT_URL]: { status: 200, body: equipment },
+      'POST /api/bookings': {
+        status: 409,
+        body: {
+          error: {
+            code: 'EQUIPMENT_UNAVAILABLE',
+            message: 'Only 1 × Racket available for this slot, you asked for 3',
+          },
+        },
+      },
+    };
+    const fetchMock = fakeApi(routes);
+
+    renderPage();
+    await screen.findByRole('option', { name: 'Court 1' });
+    fireEvent.click(screen.getByLabelText('90 minutes'));
+    fireEvent.click(screen.getByRole('button', { name: 'See the price' }));
+    fireEvent.change(await screen.findByLabelText('Racket quantity'), {
+      target: { value: '3' },
+    });
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Confirm the booking' }),
+    );
+
+    expect((await screen.findByRole('alert')).textContent).toBe(
+      'Only 1 × Racket available for this slot, you asked for 3',
+    );
+    // The summary stays, and the stock of the slot is asked again.
+    expect(screen.getByRole('region', { name: 'Summary' })).toBeTruthy();
+    const equipmentCalls = fetchMock.mock.calls.filter(([url]) =>
+      url.startsWith('/api/equipment/availability'),
+    );
+    expect(equipmentCalls).toHaveLength(2);
   });
 });
