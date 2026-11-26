@@ -121,7 +121,7 @@ Protected routes use two middlewares: `authenticate` (valid JWT cookie, else `40
 | Access | Roles | Routes |
 | --- | --- | --- |
 | Public | everybody | `/api/health`, `/api/courts`, `/api/availability`, `/api/equipment/availability`, `/api/auth/*` |
-| Player | any logged-in user | `/api/users/me`, `/api/pricing/quote`, `/api/bookings`, `/api/bookings/me` |
+| Player | any logged-in user | `/api/users/me`, `/api/pricing/quote`, `/api/bookings`, `/api/bookings/me`, `/api/bookings/:id/equipment` |
 | Admin | `ADMIN` | `/api/admin/*`: `403 FORBIDDEN` for `PLAYER`, `STAFF` and `EQUIPMENT_MANAGER` |
 
 `backend/tests/integration/roleAccess.test.js` checks this matrix for every route and every role: **add each new route to it**. In the front end, `<RequireAuth roles={ADMIN}>` (lists in `src/auth/roles.js`) sends a user without the role to the home page, and the home page only shows the links of the user's role.
@@ -174,6 +174,8 @@ Body: `{ "courtId", "date", "start", "duration" }`, checked like the quote. Answ
 
 Once the booking is saved, the player gets a confirmation email in French (FR-30, AC-12): date, time, court, equipment and price. It is sent in the background, so the answer never waits for it. If the email provider fails, the booking stays valid: the email is retried 3 times (after 1, 2 and 4 seconds), and logged in `notifications` as `SENT` or `FAILED` (type `BOOKING_CONFIRMATION`). The same template is ready for changes (`BOOKING_UPDATE`) and cancellations (`BOOKING_CANCELLATION`): `bookingEmailsService.notify('UPDATED' | 'CANCELLED', bookingId)`.
 
+**Equipment** (FR-18, FR-19): the body can also hold `"equipment": [{ "typeId", "quantity" }]` (each type once, 0 to 10). Each quantity is checked against the stock of the slot, with the equipment types locked during the check: two simultaneous bookings cannot both take the last rackets. The answer then gives the `equipment` (`typeId`, `name`, `quantity`, `unitPrice`), the `equipmentPrice` and the `totalPrice` (court + equipment). The rental price is copied into the booking.
+
 | Status | Meaning |
 | --- | --- |
 | `400` | `VALIDATION_ERROR`, `SLOT_IN_PAST`, `OUTSIDE_BOOKING_WINDOW` (more than 14 days ahead), `OUTSIDE_OPENING_HOURS`, `NO_PRICING_RULE` |
@@ -181,6 +183,8 @@ Once the booking is saved, the player gets a confirmation email in French (FR-30
 | `404` | `COURT_NOT_FOUND`: unknown or inactive court |
 | `409` | `COURT_CLOSED`: the court is closed during the slot |
 | `409` | `SLOT_UNAVAILABLE`: "This court is already booked" (also for the quote). The `no_overlap` constraint of the database decides between two simultaneous requests: exactly one succeeds, the other gets this `409`, never a `500` |
+| `404` | `EQUIPMENT_NOT_FOUND`: unknown or inactive equipment type |
+| `409` | `EQUIPMENT_UNAVAILABLE`: more than the quantity available for the slot, e.g. "Only 1 × Racket available for this slot, you asked for 2" |
 | `409` | `LIMIT_REACHED`: the player already has the maximum number of active bookings (setting `max_active_bookings`, default 3); the message lists them. Active = confirmed and not started yet: cancelled and past bookings do not count |
 
 
@@ -190,6 +194,17 @@ Once the booking is saved, the player gets a confirmation email in French (FR-30
 Returns `{ "upcoming": [...], "past": [...] }`, only with the bookings of the logged-in player (the id comes from the login cookie). `upcoming` holds the bookings not finished yet, soonest first; `past` the finished ones, most recent first. Each booking gives `date`, `start`, `end`, `duration`, `courtName`, `equipment` (`name`, `quantity`, `unitPrice`), `courtPrice`, `equipmentPrice`, `feesTotal`, `totalPrice`, `status` and `paymentStatus`. `401` without login.
 
 The page `/my-bookings` of the front end ("My bookings" on the home page, once logged in) shows both lists.
+
+### Equipment of a booking — `/api/bookings/:id/equipment` (player)
+
+The player of the booking, or staff, can change its rackets and balls later, until 2 hours before the start (setting `equipmentChangeDeadlineHours`). Another player's booking answers `404 BOOKING_NOT_FOUND`.
+
+| Route | Body and answer |
+| --- | --- |
+| `GET /api/bookings/:id/equipment` | `{ booking, changeDeadline, canChange, equipment }`: each type with its `unitPrice`, the `quantity` of this booking and the quantity `available` for it |
+| `PUT /api/bookings/:id/equipment` | `{ "equipment": [{ "typeId", "quantity" }] }`, the whole new list (`[]` removes everything): `200` with the booking and its new `totalPrice`. `409 EQUIPMENT_UNAVAILABLE` above the stock, `409 EQUIPMENT_CHANGE_CLOSED` after the deadline (staff: until the start), `409 BOOKING_NOT_ACTIVE` for a cancelled booking |
+
+Equipment already reserved keeps its price; a new type gets the rental price of the day. In the front end, "Book a court" offers the equipment of the slot with the total price, and "My bookings" has a "Change equipment" link for each upcoming booking.
 
 ## Database
 
