@@ -1,4 +1,8 @@
 import { prisma } from '../../config/db.js';
+import {
+  readEquipmentStock,
+  WITH_EQUIPMENT,
+} from './bookingEquipment.repository.js';
 
 // True when PostgreSQL refused a booking because of the "no_overlap" exclusion
 // constraint (error 23P01, RULE-05): another confirmed booking of the same
@@ -61,7 +65,10 @@ export const bookingsRepository = {
   // two requests of the same player run one after the other and cannot both
   // pass the limit. Returns { booking, active }; booking is null when the
   // limit is reached, and active lists the player's active bookings.
-  createWithinLimit(data, maxActive, now) {
+  // equipment: [{ typeId, quantity }] asked with the booking (FR-18); the
+  // stock of the slot is read with the type rows locked, and check(stock)
+  // gives the rows to save or throws (RULE-08, FR-19).
+  createWithinLimit(data, maxActive, now, equipment = [], check = () => []) {
     return prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM users WHERE id = ${data.userId} FOR UPDATE`;
       const active = await tx.booking.findMany({
@@ -75,9 +82,20 @@ export const bookingsRepository = {
       });
       if (active.length >= maxActive) return { booking: null, active };
 
+      const rows = equipment.length
+        ? check(
+            await readEquipmentStock(
+              tx,
+              equipment.map((e) => e.typeId),
+              data.startTime,
+              data.endTime,
+              { lock: true },
+            ),
+          )
+        : [];
       const booking = await tx.booking.create({
-        data,
-        include: { court: { select: { name: true } } },
+        data: { ...data, equipment: { create: rows } },
+        include: WITH_EQUIPMENT,
       });
       return { booking, active };
     });
