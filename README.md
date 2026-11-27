@@ -121,7 +121,8 @@ Protected routes use two middlewares: `authenticate` (valid JWT cookie, else `40
 | Access | Roles | Routes |
 | --- | --- | --- |
 | Public | everybody | `/api/health`, `/api/courts`, `/api/availability`, `/api/equipment/availability`, `/api/auth/*` |
-| Player | any logged-in user | `/api/users/me`, `/api/pricing/quote`, `/api/bookings`, `/api/bookings/me`, `/api/bookings/:id/equipment` |
+| Player | any logged-in user | `/api/users/me`, `/api/pricing/quote`, `/api/bookings`, `/api/bookings/me`, `/api/bookings/:id` and its sub-routes (only the player of the booking, or staff: `404` for anyone else) |
+| Staff | `STAFF`, `EQUIPMENT_MANAGER`, `ADMIN` | `/api/staff/*`: `403 FORBIDDEN` for `PLAYER` |
 | Admin | `ADMIN` | `/api/admin/*`: `403 FORBIDDEN` for `PLAYER`, `STAFF` and `EQUIPMENT_MANAGER` |
 
 `backend/tests/integration/roleAccess.test.js` checks this matrix for every route and every role: **add each new route to it**. In the front end, `<RequireAuth roles={ADMIN}>` (lists in `src/auth/roles.js`) sends a user without the role to the home page, and the home page only shows the links of the user's role.
@@ -229,6 +230,16 @@ The player of the booking, or staff, can change its rackets and balls later, unt
 | `PUT /api/bookings/:id/equipment` | `{ "equipment": [{ "typeId", "quantity" }] }`, the whole new list (`[]` removes everything): `200` with the booking and its new `totalPrice`. `409 EQUIPMENT_UNAVAILABLE` above the stock, `409 EQUIPMENT_CHANGE_CLOSED` after the deadline (staff: until the start), `409 BOOKING_NOT_ACTIVE` for a cancelled booking |
 
 Equipment already reserved keeps its price; a new type gets the rental price of the day. In the front end, "Book a court" offers the equipment of the slot with the total price, and "My bookings" has a "Change equipment" link for each upcoming booking.
+
+### GET /api/bookings/:id — details of a booking (player, staff)
+
+The player of the booking, or staff (SDD 5.1), gets the booking with its prices and equipment, the `player` (`id`, `firstName`, `lastName`, `email`, `phone`) or the `guest` (`name`, `phone`) of a booking made by staff, and the `rentals`: the items handed out (`code`, `typeName`, `pickedUpAt`, `returnedAt`, `returnCondition`). Another player's booking answers `404 BOOKING_NOT_FOUND`, like an unknown one.
+
+### GET /api/staff/planning?date=YYYY-MM-DD — daily planning (staff)
+
+For the front desk (FR-27, AC-16): any day, past or future (today without `date`). The answer gives the `slots` of the timeline (30 minutes, from the opening to the closing time, widened to a booking outside them) and each court with its `closures` of the day and its `bookings`: `start`, `end`, `player` (name of the player or of the guest, with `isGuest`), `phone`, `equipment`, `paymentStatus` and `totalPrice`. Cancelled bookings are not shown; an inactive court only appears if it still has a booking that day. `400` for a wrong date.
+
+In the front end, "Daily planning" (home page, staff only) shows the day as a timeline: one row per court, one column per 30 minutes. Each booking links to its details page (`/staff/bookings/:id`): slot, player or guest, prices, payment status, reserved equipment and items handed out. The actions on a booking (pick-up, return, payment, change or cancel) are added to this page by their own stories.
 
 ## Database
 
