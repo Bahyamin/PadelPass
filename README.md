@@ -126,6 +126,17 @@ Protected routes use two middlewares: `authenticate` (valid JWT cookie, else `40
 
 `backend/tests/integration/roleAccess.test.js` checks this matrix for every route and every role: **add each new route to it**. In the front end, `<RequireAuth roles={ADMIN}>` (lists in `src/auth/roles.js`) sends a user without the role to the home page, and the home page only shows the links of the user's role.
 
+### PATCH /api/users/me — change my profile (player)
+
+`GET /api/users/me` also gives the `phone` of the user. `PATCH /api/users/me` changes any of `firstName`, `lastName` and `phone`, with the same rules as the registration (FR-05), and answers `200` with the updated profile. The email cannot be changed.
+
+| Status | Meaning |
+| --- | --- |
+| `400` | `VALIDATION_ERROR`, with `error.field` naming the wrong field (`firstName`, `lastName`, `phone`, or `email`: "The email cannot be changed"); also for any other field (such as `role`) or an empty body |
+| `401` | Not logged in, or account deactivated |
+
+Every `400` answer of a checked body now names its field in `error.field`, so a form can show the message next to the field. The page `/profile` of the front end ("My profile" on the home page) shows and edits the profile.
+
 ### Club configuration — `/api/admin` (administrator)
 
 Every route needs an `ADMIN` login: `401` without login, `403 FORBIDDEN` for any other role. Each change is written to `audit_logs`. Existing bookings keep the price saved when they were booked.

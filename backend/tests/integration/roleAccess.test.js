@@ -30,6 +30,7 @@ const PUBLIC_ROUTES = [
 // Any logged-in user ("Player" access in the SDD).
 const LOGGED_IN_ROUTES = [
   ['GET', '/api/users/me'],
+  ['PATCH', '/api/users/me'],
   ['GET', '/api/pricing/quote'],
   ['POST', '/api/bookings'],
   ['GET', '/api/bookings/me'],
