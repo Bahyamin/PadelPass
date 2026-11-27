@@ -45,6 +45,10 @@ const ADMIN_ROUTES = [
   ['DELETE', '/api/admin/pricing-rules/1'],
   ['GET', '/api/admin/settings'],
   ['PUT', '/api/admin/settings'],
+  ['GET', '/api/admin/courts'],
+  ['POST', '/api/admin/courts'],
+  ['PATCH', '/api/admin/courts/1'],
+  ['POST', '/api/admin/courts/1/closures'],
 ];
 
 describe('role-based access to the API', () => {
