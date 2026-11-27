@@ -8,9 +8,12 @@ export class AppError extends Error {
   }
 }
 
+// field: the name of the invalid field of the body, when there is one, so
+// that a form can show the message next to that field.
 export class ValidationError extends AppError {
-  constructor(message, code = 'VALIDATION_ERROR') {
+  constructor(message, code = 'VALIDATION_ERROR', field) {
     super(400, code, message);
+    if (field) this.field = field;
   }
 }
 

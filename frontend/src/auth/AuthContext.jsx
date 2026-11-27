@@ -40,8 +40,9 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  // setUser: the profile page updates the user after a change (FR-05).
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, setUser, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

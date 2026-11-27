@@ -13,4 +13,9 @@ export const usersRepository = {
   create(data) {
     return prisma.user.create({ data });
   },
+
+  // Fields left undefined are not changed.
+  update(id, data) {
+    return prisma.user.update({ where: { id }, data });
+  },
 };

@@ -11,9 +11,10 @@ export function errorHandler(err, req, res, _next) {
   const requestId = randomUUID().slice(0, 8);
 
   if (err instanceof AppError) {
-    return res
-      .status(err.status)
-      .json({ error: { code: err.code, message: err.message, requestId } });
+    const { code, message, field } = err;
+    return res.status(err.status).json({
+      error: { code, message, ...(field && { field }), requestId },
+    });
   }
 
   // Client errors raised by Express itself, such as a malformed JSON body.
