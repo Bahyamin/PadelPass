@@ -1,14 +1,16 @@
 import { Route, Routes } from 'react-router';
 import RequireAuth from './auth/RequireAuth.jsx';
-import { ADMIN } from './auth/roles.js';
+import { ADMIN, STAFF } from './auth/roles.js';
 import AdminCourts from './pages/AdminCourts.jsx';
 import AdminSettings from './pages/AdminSettings.jsx';
 import Availability from './pages/Availability.jsx';
 import BookCourt from './pages/BookCourt.jsx';
+import BookingDetails from './pages/BookingDetails.jsx';
 import BookingEquipment from './pages/BookingEquipment.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import MyBookings from './pages/MyBookings.jsx';
+import Planning from './pages/Planning.jsx';
 import Profile from './pages/Profile.jsx';
 import Register from './pages/Register.jsx';
 import RentEquipment from './pages/RentEquipment.jsx';
@@ -69,6 +71,22 @@ export default function App() {
         element={
           <RequireAuth roles={ADMIN}>
             <AdminCourts />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/staff/planning"
+        element={
+          <RequireAuth roles={STAFF}>
+            <Planning />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/staff/bookings/:id"
+        element={
+          <RequireAuth roles={STAFF}>
+            <BookingDetails />
           </RequireAuth>
         }
       />
