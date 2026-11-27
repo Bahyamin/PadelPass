@@ -36,6 +36,14 @@ const LOGGED_IN_ROUTES = [
   ['GET', '/api/bookings/me'],
   ['GET', '/api/bookings/1/equipment'],
   ['PUT', '/api/bookings/1/equipment'],
+  ['GET', '/api/bookings/1'],
+];
+
+// Front desk ("Staff" access in the SDD): requireRole(STAFF), so staff,
+// equipment managers and administrators.
+const STAFF_ROUTES = [
+  // Daily planning (FR-27)
+  ['GET', `/api/staff/planning?date=${today}`],
 ];
 
 // Administrators only: requireRole(ADMIN).
@@ -103,6 +111,24 @@ describe('role-based access to the API', () => {
       expect(anonymous.body.error.code).toBe('UNAUTHORIZED');
 
       for (const role of ROLES) {
+        const res = await call(agents[role], method, url);
+        expect(res.status, role).not.toBe(401);
+        expect(res.status, role).not.toBe(403);
+      }
+    },
+  );
+
+  it.each(STAFF_ROUTES)(
+    '%s %s: 401 without login, 403 for a player, open to staff',
+    async (method, url) => {
+      const anonymous = await call(request(app), method, url);
+      expect(anonymous.status).toBe(401);
+
+      const asPlayer = await call(agents.PLAYER, method, url);
+      expect(asPlayer.status).toBe(403);
+      expect(asPlayer.body.error.code).toBe('FORBIDDEN');
+
+      for (const role of ['STAFF', 'EQUIPMENT_MANAGER', 'ADMIN']) {
         const res = await call(agents[role], method, url);
         expect(res.status, role).not.toBe(401);
         expect(res.status, role).not.toBe(403);
