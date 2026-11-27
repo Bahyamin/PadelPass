@@ -4,11 +4,13 @@ import { errorHandler, notFound } from './middlewares/errorHandler.js';
 import adminRoutes from './modules/admin/admin.routes.js';
 import adminCourtsRoutes from './modules/courts/adminCourts.routes.js';
 import authRoutes from './modules/auth/auth.routes.js';
+import bookingDetailsRoutes from './modules/bookings/bookingDetails.routes.js';
 import bookingsRoutes from './modules/bookings/bookings.routes.js';
 import myBookingsRoutes from './modules/bookings/myBookings.routes.js';
 import healthRoutes from './modules/health/health.routes.js';
 import courtsRoutes from './modules/courts/courts.routes.js';
 import equipmentRoutes from './modules/equipment/equipment.routes.js';
+import planningRoutes from './modules/planning/planning.routes.js';
 import usersRoutes from './modules/users/users.routes.js';
 
 const app = express();
@@ -23,9 +25,12 @@ app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api', bookingsRoutes);
 app.use('/api', myBookingsRoutes);
+// After myBookingsRoutes: GET /bookings/me must not be read as /bookings/:id.
+app.use('/api', bookingDetailsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin', adminCourtsRoutes);
+app.use('/api/staff', planningRoutes);
 
 app.use('/api', notFound);
 app.use(errorHandler);
