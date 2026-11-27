@@ -1,5 +1,6 @@
 import { ValidationError } from '../../utils/errors.js';
 import { slotSchema } from './bookings.schemas.js';
+import { bookingEquipmentService } from './bookingEquipment.service.js';
 import { bookingsService } from './bookings.service.js';
 
 // HTTP layer: reads the request, calls the service, sends the response.
@@ -16,5 +17,21 @@ export const bookingsController = {
 
   async create(req, res) {
     res.status(201).json(await bookingsService.create(req.user.id, req.body));
+  },
+
+  async getEquipment(req, res) {
+    res.json(
+      await bookingEquipmentService.get(req.user, Number(req.params.id)),
+    );
+  },
+
+  async changeEquipment(req, res) {
+    res.json(
+      await bookingEquipmentService.change(
+        req.user,
+        Number(req.params.id),
+        req.body.equipment,
+      ),
+    );
   },
 };

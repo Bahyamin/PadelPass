@@ -14,10 +14,12 @@ export async function resetDb() {
   await prisma.$executeRawUnsafe(`TRUNCATE ${names} RESTART IDENTITY CASCADE`);
 }
 
-// Deletes the bookings between two tests of a file, with their emails
-// (a notification row keeps its booking: it must be deleted first).
+// Deletes the bookings between two tests of a file, with their emails and
+// their equipment (a notification or booking_equipment row keeps its
+// booking: it must be deleted first).
 export async function clearBookings() {
   await bookingEmailsService.settle();
   await prisma.notification.deleteMany();
+  await prisma.bookingEquipment.deleteMany();
   await prisma.booking.deleteMany();
 }

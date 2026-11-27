@@ -5,6 +5,7 @@ import AdminCourts from './pages/AdminCourts.jsx';
 import AdminSettings from './pages/AdminSettings.jsx';
 import Availability from './pages/Availability.jsx';
 import BookCourt from './pages/BookCourt.jsx';
+import BookingEquipment from './pages/BookingEquipment.jsx';
 import Home from './pages/Home.jsx';
 import Login from './pages/Login.jsx';
 import MyBookings from './pages/MyBookings.jsx';
@@ -36,6 +37,14 @@ export default function App() {
         element={
           <RequireAuth>
             <MyBookings />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/my-bookings/:id/equipment"
+        element={
+          <RequireAuth>
+            <BookingEquipment />
           </RequireAuth>
         }
       />

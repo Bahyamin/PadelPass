@@ -26,8 +26,9 @@ const equipmentLabel = (equipment) =>
     ? equipment.map((e) => `${e.quantity} × ${e.name}`).join(', ')
     : 'None';
 
-// One list of bookings (upcoming or past), as a table.
-function BookingTable({ title, bookings, empty }) {
+// One list of bookings (upcoming or past), as a table. With canChange, a
+// confirmed booking gets a link to change its equipment (FR-18).
+function BookingTable({ title, bookings, empty, canChange = false }) {
   return (
     <section aria-label={title}>
       <h2>{title}</h2>
@@ -45,6 +46,7 @@ function BookingTable({ title, bookings, empty }) {
               <th scope="col">Total price</th>
               <th scope="col">Status</th>
               <th scope="col">Payment</th>
+              {canChange && <th scope="col">Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -60,6 +62,15 @@ function BookingTable({ title, bookings, empty }) {
                 <td>{b.totalPrice} EUR</td>
                 <td>{STATUS_LABELS[b.status] ?? b.status}</td>
                 <td>{PAYMENT_LABELS[b.paymentStatus] ?? b.paymentStatus}</td>
+                {canChange && (
+                  <td>
+                    {b.status === 'CONFIRMED' && (
+                      <Link to={`/my-bookings/${b.id}/equipment`}>
+                        Change equipment
+                      </Link>
+                    )}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -96,6 +107,7 @@ export default function MyBookings() {
             title="Upcoming bookings"
             bookings={bookings.upcoming}
             empty="No upcoming booking."
+            canChange
           />
           <BookingTable
             title="Past bookings"

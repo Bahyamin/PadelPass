@@ -18,6 +18,7 @@ import {
   isOverlapError,
   isWriteConflict,
 } from './bookings.repository.js';
+import { checkEquipment, toBookingView } from './bookingEquipment.js';
 import { computeCourtPrice, formatPrice } from './pricing.js';
 
 const DEFAULT_BOOKING_WINDOW_DAYS = 14; // RULE-03
@@ -176,9 +177,10 @@ export const bookingsService = {
     };
   },
 
-  // Books a court for the logged-in player (FR-09, FR-13). The price is copied
-  // into the booking, so a later change of the pricing rules does not change it.
-  async create(userId, slot, now = new Date()) {
+  // Books a court for the logged-in player (FR-09, FR-13), with the equipment
+  // asked (FR-18, FR-19). The prices are copied into the booking, so a later
+  // change of the pricing rules or rental prices does not change them.
+  async create(userId, { equipment = [], ...slot }, now = new Date()) {
     const checked = await checkSlot(slot, now);
     // RULE-04: the limit is a booking parameter of the admin (default 3).
     const maxActive = Number(
@@ -199,6 +201,8 @@ export const bookingsService = {
         },
         maxActive,
         now,
+        equipment,
+        (stock) => checkEquipment(equipment, stock),
       ),
     );
     if (!result.booking) throw limitReached(maxActive, result.active);
@@ -206,17 +210,7 @@ export const bookingsService = {
     const { booking } = result;
     // FR-30: confirmation email, sent after the commit without waiting for it.
     bookingEmailsService.notify('CREATED', booking.id);
-    return {
-      id: booking.id,
-      courtId: booking.courtId,
-      courtName: booking.court.name,
-      date: checked.date,
-      start: checked.start,
-      end: checked.end,
-      duration: checked.duration,
-      status: booking.status,
-      paymentStatus: booking.paymentStatus,
-      courtPrice: checked.price,
-    };
+    // The booking with its equipment and the total price (FR-19).
+    return toBookingView(booking);
   },
 };
